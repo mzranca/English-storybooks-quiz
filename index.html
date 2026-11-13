@@ -199,23 +199,25 @@ table.words td.sent u{color:var(--fg);font-weight:700;text-decoration-color:var(
       </div>
 
       <div class="step" id="stepSpeak" hidden>
-        <h3>步驟 2　按麥克風，大聲唸出這個單字</h3>
+        <h3>步驟 2　朗讀練習（不影響過關，結果會記錄下來）</h3>
         <div class="speak">
           <button class="mic" id="micBtn" aria-label="開始錄音"><svg><use href="#micico"/></svg></button>
           <div>
-            <div class="row"><span class="word" id="speakWord"></span><button class="btn ghost" id="hearWord">🔊 聽發音</button></div>
+            <div class="row"><span class="word" id="speakWord"></span><button class="btn ghost" id="hearWord">🔊 聽正確唸法</button></div>
             <div class="heard" id="heard"></div>
-            <div class="row" id="speakAlt"></div>
+            <div class="row" id="speakAlt"><button class="btn" id="toDone">下一步：聽整句 →</button></div>
           </div>
         </div>
       </div>
 
       <div class="step" id="stepDone" hidden>
         <h3>過關！聽聽整句話怎麼唸</h3>
+        <div class="msg" id="speakNote"></div>
         <div class="done">
           <div class="full" id="fullSentence"></div>
           <div class="row">
-            <button class="btn ghost" id="playSent">🔊 再聽一次</button>
+            <button class="btn ghost" id="playWord">🔊 單字唸法</button>
+            <button class="btn ghost" id="playSent">🔊 再聽整句</button>
             <button class="btn ghost" id="playSlow">🐢 慢速</button>
             <button class="btn" id="nextBtn">下一題 →</button>
           </div>
@@ -604,18 +606,18 @@ function micStop(){
 }
 function micUI(){
   const st = $("#micStatus"); if (!st) return;
-  if (!SR){ st.innerHTML = `<span class="pill off">此瀏覽器不支援語音辨識</span>`; }
+  if (quiz && quiz.finished){ st.innerHTML = ""; }
+  else if (!SR){ st.innerHTML = `<span class="pill off">此瀏覽器不支援語音辨識</span>`; }
   else if (mic.denied){ st.innerHTML = `<span class="pill off">麥克風未允許</span>`; }
   else if (mic.running){ st.innerHTML = `<span class="pill on">● 麥克風已開啟</span>`; }
   else { st.innerHTML = `<button class="pill off" id="micRetry">麥克風未開啟．點我開啟</button>`; $("#micRetry").onclick = () => { mic.fails = 0; micStart(); }; }
   const listening = mic.running && quiz && quiz.phase === "speak";
   $("#micBtn").classList.toggle("on", !!listening);
   if (quiz && quiz.phase === "speak" && !quiz.cur.heard){
-    $("#heard").textContent = !SR ? "這個瀏覽器不支援語音辨識，請改用 Chrome 或 Edge；或由家長聽過後按下方按鈕。"
-      : mic.denied ? "麥克風沒有被允許。請點網址列左邊的圖示允許麥克風，再重新整理頁面；或由家長聽過後按下方按鈕。"
-      : mic.err ? mic.err
-      : mic.running ? "麥克風正在聽，直接大聲唸出這個單字！" : "麥克風開啟中…";
-    renderSpeakAlt();
+    $("#heard").textContent = !SR ? "這個瀏覽器不支援語音辨識（請用 Chrome 或 Edge）。可以先聽正確唸法跟著唸，再按「下一步」。"
+      : mic.denied ? "麥克風沒有被允許，這題不會記錄朗讀結果。可以先聽正確唸法跟著唸，再按「下一步」。"
+      : mic.err ? mic.err + " 可以直接按「下一步」。"
+      : mic.running ? "麥克風正在聽，大聲唸出這個單字！唸不出來也沒關係，可以直接按「下一步」。" : "麥克風開啟中…";
   }
 }
 
@@ -635,17 +637,22 @@ function show(view){
 document.querySelectorAll(".nav button").forEach(b => b.onclick = () => show(b.dataset.go));
 window.addEventListener("hashchange", () => show(location.hash.slice(1) || "home"));
 
+/* ---------- reading stats (reading never affects passing) ---------- */
+const spOk = x => x.speak === "pass" || x.speak === "manual";
+const spTried = x => spOk(x) || x.speak === "fail";
+const spRate = arr => { const t = arr.filter(spTried).length; return t ? pct(arr.filter(spOk).length, t) + "%" : "—"; };
+
 /* ---------- home ---------- */
 function storyStats(id){
   const ss = loadRec().sessions.filter(s => s.storyId === id);
   let n=0, c=0, sp=0, best=null;
-  ss.forEach(s => { const k=s.items.length; if(!k) return; const cc=s.items.filter(x=>x.firstTry).length; n+=k; c+=cc; sp+=s.items.filter(x=>x.speak==="pass"||x.speak==="manual").length; if(k>=5) best=Math.max(best??0, pct(cc,k)); });
+  ss.forEach(s => { const k=s.items.length; if(!k) return; const cc=s.items.filter(x=>x.firstTry).length; n+=k; c+=cc; sp+=s.items.filter(spOk).length; if(k>=5) best=Math.max(best??0, pct(cc,k)); });
   return { sessions: ss.filter(s=>s.items.length).length, n, c, sp, best };
 }
 function wrongIdx(id){
   // keep a word in review until its latest attempt was fully correct
   const last = new Map();
-  loadRec().sessions.filter(s => s.storyId === id).sort((a,b)=>a.date-b.date).forEach(s => s.items.forEach(x => last.set(x.qi, x.firstTry && x.speak!=="fail")));
+  loadRec().sessions.filter(s => s.storyId === id).sort((a,b)=>a.date-b.date).forEach(s => s.items.forEach(x => last.set(x.qi, x.firstTry)));
   const st = STORIES.find(s => s.id === id), max = st ? st.questions.length : 0;
   return [...last].filter(([i,ok]) => !ok && i < max).map(([i]) => i);
 }
@@ -746,12 +753,8 @@ function toSpeak(){
   if (SR && !mic.denied && !mic.want) micStart();
   micUI();
 }
-function renderSpeakAlt(){
-  const c = quiz.cur, box = $("#speakAlt");
-  box.innerHTML = "";
-  if (!SR || mic.denied || (mic.err && !mic.running)){ box.innerHTML = `<button class="btn ghost" id="manualOk">家長確認唸對了</button>`; $("#manualOk").onclick = () => finishQ("manual"); return; }
-  if (c.tries >= 3){ box.innerHTML = `<button class="btn ghost" id="skipSpeak">先跳過（記錄為朗讀未通過）</button>`; $("#skipSpeak").onclick = () => finishQ("fail"); }
-}
+// reading is recorded but never blocks progress: pass = recognised, fail = tried but not recognised, skip = no attempt heard
+$("#toDone").onclick = () => { const c = quiz.cur; finishQ(c.done ? "pass" : c.tries ? "fail" : "skip"); };
 function onHeard(alts){
   if (!quiz || quiz.phase !== "speak" || quiz.cur.done) return;
   if (Date.now() < mic.ignoreUntil) return;
@@ -760,10 +763,9 @@ function onHeard(alts){
   if (heardMatches(alts, c.q.a)){
     c.done = true;
     $("#heard").innerHTML = `聽到：<b class="ok">${esc(alts[0])}</b>　唸對了！`;
-    setTimeout(() => finishQ("pass"), 600);
+    setTimeout(() => finishQ("pass"), 900);
   } else {
-    $("#heard").innerHTML = `聽到：<b class="no">${esc(alts[0]||"（沒聽清楚）")}</b>　再試一次，可以先按「聽發音」跟著唸。`;
-    renderSpeakAlt();
+    $("#heard").innerHTML = `聽到：<b class="no">${esc(alts[0]||"（沒聽清楚）")}</b>　可以按「聽正確唸法」再唸一次，或直接按「下一步」。`;
   }
 }
 $("#hearWord").onclick = () => say(quiz.cur.q.a, 0.8);
@@ -774,6 +776,7 @@ function finishQ(speak){
   quiz.phase = "done"; c.done = true; micUI();
   quiz.session.items.push({ qi: c.q.i, word: c.q.a, firstTry: c.firstTry, wrongPicks: c.wrong, speak, speakTries: c.tries });
   persist();
+  $("#speakNote").textContent = speak === "pass" ? "朗讀：唸對了 ✓" : speak === "fail" ? `朗讀：這次沒有辨識成功（試了 ${c.tries} 次），已記錄。多聽幾次單字唸法吧！` : "朗讀：這題沒有錄到聲音。";
   $("#stepSpeak").hidden = true; $("#stepDone").hidden = false;
   const [pre, mid, post] = splitSentence(c.q);
   $("#fullSentence").innerHTML = `${esc(pre)}<mark>${esc(mid)}</mark>${esc(post)}`;
@@ -781,6 +784,7 @@ function finishQ(speak){
   say(c.q.s);
 }
 $("#playSent").onclick = () => say(quiz.cur.q.s);
+$("#playWord").onclick = () => say(quiz.cur.q.a, 0.8);
 $("#playSlow").onclick = () => say(quiz.cur.q.s, 0.6);
 $("#nextBtn").onclick = () => {
   if (window.speechSynthesis) speechSynthesis.cancel();
@@ -791,15 +795,17 @@ $("#nextBtn").onclick = () => {
 function showResult(){
   quiz.finished = true; quiz.phase = "end"; micStop();
   const s = quiz.session, n = s.items.length;
-  const c = s.items.filter(x => x.firstTry).length, sp = s.items.filter(x => x.speak === "pass" || x.speak === "manual").length;
+  const c = s.items.filter(x => x.firstTry).length, sp = s.items.filter(spOk).length, st = s.items.filter(spTried).length;
   $("#roadFill").style.width = "100%"; $("#rider").style.left = "calc(100% - 17px)";
-  const miss = s.items.filter(x => !x.firstTry || x.speak === "fail");
+  const miss = s.items.filter(x => !x.firstTry);
+  const sayMore = s.items.filter(x => x.speak === "fail");
   $("#qCard").hidden = true;
   const r = $("#qResult"); r.hidden = false;
   r.innerHTML = `<h2>騎到終點了！</h2>
     <div class="big">${pct(c,n)}%</div>
-    <div>選擇題一次答對 <b>${c} / ${n}</b>　·　朗讀通過 <b>${sp} / ${n}</b></div>
-    ${miss.length ? `<div class="miss"><b>需要再練的單字</b>${miss.map(x => `<div><b>${esc(x.word)}</b>${x.wrongPicks.length?`　選錯：${x.wrongPicks.map(esc).join("、")}`:""}${x.speak==="fail"?"　朗讀未通過":""}</div>`).join("")}</div>` : `<div>全部一次答對，太厲害了！</div>`}
+    <div>選擇題一次答對 <b>${c} / ${n}</b>　·　朗讀唸對 <b>${sp} / ${st}</b>${st < n ? `（${n - st} 題沒錄到聲音）` : ""}</div>
+    ${miss.length ? `<div class="miss"><b>需要再練的單字</b>${miss.map(x => `<div><b>${esc(x.word)}</b>${x.wrongPicks.length?`　選錯：${x.wrongPicks.map(esc).join("、")}`:""}</div>`).join("")}</div>` : `<div>全部一次答對，太厲害了！</div>`}
+    ${sayMore.length ? `<div class="miss"><b>多聽幾次唸法的單字（朗讀沒辨識成功）</b><div>${sayMore.map(x => `<button class="linkbtn" data-say="${esc(x.word)}">🔊 ${esc(x.word)}</button>`).join("　")}</div></div>` : ""}
     <div class="row" style="justify-content:center">
       ${miss.length ? `<button class="btn" id="rWrong">練習錯題</button>` : ""}
       <button class="btn ghost" id="rHome">回到故事</button>
@@ -809,11 +815,11 @@ function showResult(){
   if (miss.length) $("#rWrong").onclick = () => startQuiz(si, "wrong");
   $("#rHome").onclick = () => show("home");
   $("#rRec").onclick = () => show("records");
+  r.querySelectorAll("[data-say]").forEach(b => b.onclick = () => say(b.dataset.say, 0.8));
 }
 
 /* ---------- records ---------- */
 let confirmClear = false, recStory = null, recFilter = "all";
-const isPass = x => x.speak === "pass" || x.speak === "manual";
 function renderMastery(){
   const box = $("#mastery"); if (!box) return;
   const st = STORIES.find(s => s.id === recStory); if (!st) return;
@@ -822,11 +828,11 @@ function renderMastery(){
   sessions.forEach(s => s.items.forEach(x => { if (att[x.qi]) att[x.qi].push({ ...x, date: s.date }); }));
   const rows = st.questions.map((q, i) => {
     const a = att[i], n = a.length, last = a[n-1];
-    const status = !n ? "new" : (last.firstTry && isPass(last)) ? "ok" : "learning";
-    return { i, q, n, c: a.filter(x => x.firstTry).length, sp: a.filter(isPass).length, recent: a.slice(-6), status, wrongPicks: a.flatMap(x => x.wrongPicks) };
+    const status = !n ? "new" : last.firstTry ? "ok" : "learning";
+    return { i, q, n, c: a.filter(x => x.firstTry).length, sp: a.filter(spOk).length, st: a.filter(spTried).length, all: a, recent: a.slice(-6), status, wrongPicks: a.flatMap(x => x.wrongPicks) };
   });
   const N = rows.length, ok = rows.filter(r => r.status === "ok").length, lrn = rows.filter(r => r.status === "learning").length, nw = N - ok - lrn;
-  const tn = rows.reduce((s,r) => s + r.n, 0), tc = rows.reduce((s,r) => s + r.c, 0), tsp = rows.reduce((s,r) => s + r.sp, 0);
+  const tn = rows.reduce((s,r) => s + r.n, 0), tc = rows.reduce((s,r) => s + r.c, 0), tsp = rows.reduce((s,r) => s + r.sp, 0), tst = rows.reduce((s,r) => s + r.st, 0);
   const shown = rows.filter(r => recFilter === "all" || (recFilter === "todo" ? r.status === "learning" : recFilter === "new" ? r.status === "new" : r.status === "ok"));
   const label = { ok: "已學會", learning: "還沒學會", new: "未練習" };
   box.innerHTML = `<h2>單字掌握度</h2>
@@ -834,43 +840,45 @@ function renderMastery(){
     <div class="msum">
       <div><div class="n">${ok} / ${N}</div><div class="l">已學會的單字</div></div>
       <div><div class="n">${pct(tc,tn)}%</div><div class="l">這個故事選擇題答對率（${tc}/${tn}）</div></div>
-      <div><div class="n">${pct(tsp,tn)}%</div><div class="l">這個故事朗讀通過率</div></div>
+      <div><div class="n">${tst ? pct(tsp,tst) + "%" : "—"}</div><div class="l">這個故事朗讀唸對率（${tsp}/${tst}，僅供參考）</div></div>
       <div><div class="n">${pct(N-nw,N)}%</div><div class="l">已練習過的單字比例</div></div>
     </div>
     <div class="stack" aria-label="已學會 ${ok}、還沒學會 ${lrn}、未練習 ${nw}">
       <i style="width:${ok/N*100}%;background:var(--good)"></i><i style="width:${lrn/N*100}%;background:var(--bad)"></i><i style="width:${nw/N*100}%;background:var(--surface-2)"></i>
     </div>
     <div class="legend"><span style="--c:var(--good)">已學會 ${ok}</span><span style="--c:var(--bad)">還沒學會 ${lrn}</span><span style="--c:var(--line)">未練習 ${nw}</span></div>
-    <p class="msg">「已學會」= 最近一次作答時，選擇題一次就選對、而且朗讀通過。</p>
+    <p class="msg">「已學會」= 最近一次作答時，選擇題一次就選對。朗讀結果只做紀錄，不影響是否學會。</p>
     <div class="filters">${[["all","全部"],["todo","還沒學會"],["new","未練習"],["ok","已學會"]].map(([k,t]) => `<button data-f="${k}" aria-pressed="${recFilter===k}">${t}</button>`).join("")}</div>
-    ${shown.length ? `<div class="tbl"><table class="words"><thead><tr><th>#</th><th>單字</th><th>句子</th><th>狀態</th><th>選擇題答對</th><th>朗讀通過</th><th>最近作答</th><th>曾誤選</th></tr></thead><tbody>
+    ${shown.length ? `<div class="tbl"><table class="words"><thead><tr><th>#</th><th>單字</th><th>句子</th><th>狀態</th><th>選擇題答對</th><th>朗讀唸對</th><th>唸法</th><th>最近作答</th><th>曾誤選</th></tr></thead><tbody>
     ${shown.map(r => { const [pre, mid, post] = splitSentence(qObj(st, r.i)); return `<tr>
       <td>${r.i+1}</td><td><b>${esc(r.q[2])}</b></td>
       <td class="sent">${esc(pre)}<u>${esc(mid)}</u>${esc(post)}</td>
       <td><span class="st ${r.status}">${label[r.status]}</span></td>
       <td>${r.n ? `${r.c}/${r.n}（${pct(r.c,r.n)}%）` : "—"}</td>
-      <td>${r.n ? `${r.sp}/${r.n}` : "—"}</td>
-      <td>${r.recent.map(x => `<span class="dot ${x.firstTry && isPass(x) ? "y" : "x"}" title="${new Date(x.date).toLocaleDateString("zh-TW")}：${x.firstTry ? "選對" : "選錯"}、${isPass(x) ? "朗讀通過" : "朗讀未過"}"></span>`).join("") || "—"}</td>
+      <td>${r.st ? `${r.sp}/${r.st}` : "—"}</td>
+      <td><button class="linkbtn" data-say="${esc(r.q[2])}" aria-label="聽 ${esc(r.q[2])} 的唸法">🔊</button></td>
+      <td>${r.recent.map(x => `<span class="dot ${x.firstTry ? "y" : "x"}" title="${new Date(x.date).toLocaleDateString("zh-TW")}：${x.firstTry ? "選對" : "選錯"}、${spOk(x) ? "朗讀唸對" : x.speak === "fail" ? "朗讀沒辨識成功" : "朗讀沒錄到"}"></span>`).join("") || "—"}</td>
       <td>${[...new Set(r.wrongPicks)].slice(0,3).map(esc).join("、") || "—"}</td></tr>`; }).join("")}
     </tbody></table></div>` : `<div class="empty">這個分類目前沒有單字。</div>`}`;
   box.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { recStory = b.dataset.st; recFilter = "all"; renderMastery(); });
   box.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { recFilter = b.dataset.f; renderMastery(); });
+  box.querySelectorAll("[data-say]").forEach(b => b.onclick = () => say(b.dataset.say, 0.8));
 }
 function renderRecords(){
   const all = loadRec().sessions.filter(s => s.items.length);
   const body = $("#recBody");
   if (!all.length){ body.innerHTML = `<p class="lead">完成第一題後，答題結果會自動記錄在這裡。</p><div class="empty">還沒有紀錄。回到「故事」選一個開始練習吧。</div>`; return; }
   const items = all.flatMap(s => s.items.map(x => ({...x, storyId: s.storyId, title: s.title})));
-  const n = items.length, c = items.filter(x => x.firstTry).length, sp = items.filter(x => x.speak==="pass"||x.speak==="manual").length;
+  const n = items.length, c = items.filter(x => x.firstTry).length;
 
   // per story
   const byStory = new Map();
-  all.forEach(s => { const o = byStory.get(s.storyId) || {id:s.storyId, title:s.title, sessions:0, n:0, c:0, sp:0, last:0}; o.sessions++; o.n+=s.items.length; o.c+=s.items.filter(x=>x.firstTry).length; o.sp+=s.items.filter(x=>x.speak==="pass"||x.speak==="manual").length; o.last=Math.max(o.last,s.date); byStory.set(s.storyId,o); });
+  all.forEach(s => { const o = byStory.get(s.storyId) || {id:s.storyId, title:s.title, sessions:0, n:0, c:0, items:[], last:0}; o.sessions++; o.n+=s.items.length; o.c+=s.items.filter(x=>x.firstTry).length; o.items.push(...s.items); o.last=Math.max(o.last,s.date); byStory.set(s.storyId,o); });
 
   // words
   const byWord = new Map();
   items.forEach(x => { const k = x.storyId+"|"+x.word; const o = byWord.get(k) || {word:x.word, title:x.title, n:0, wrong:0, sfail:0, picks:{}}; o.n++; if(!x.firstTry) o.wrong++; if(x.speak==="fail") o.sfail++; x.wrongPicks.forEach(p => o.picks[p]=(o.picks[p]||0)+1); byWord.set(k,o); });
-  const weak = [...byWord.values()].filter(o => o.wrong || o.sfail).sort((a,b) => (b.wrong+b.sfail)/b.n - (a.wrong+a.sfail)/a.n || b.n - a.n).slice(0,20);
+  const weak = [...byWord.values()].filter(o => o.wrong).sort((a,b) => b.wrong/b.n - a.wrong/a.n || b.n - a.n).slice(0,20);
 
   // chart of last 15 sessions
   const last = all.slice(-15);
@@ -879,7 +887,7 @@ function renderRecords(){
   let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="最近 ${last.length} 次練習的正確率">`;
   [0,50,100].forEach(v => { svg += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-dasharray="${v?4:0}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}%</text>`; });
   last.forEach((s,i) => {
-    const k = s.items.length, a = pct(s.items.filter(x=>x.firstTry).length,k), b = pct(s.items.filter(x=>x.speak==="pass"||x.speak==="manual").length,k);
+    const k = s.items.length, a = pct(s.items.filter(x=>x.firstTry).length,k), tr = s.items.filter(spTried).length, b = tr ? pct(s.items.filter(spOk).length, tr) : 0;
     const cx = L + cw*i + cw/2, d = new Date(s.date);
     svg += `<rect x="${cx-bw-1}" y="${y(a)}" width="${bw}" height="${y(0)-y(a)}" rx="3" fill="var(--accent)"><title>選擇題 ${a}%</title></rect>`;
     svg += `<rect x="${cx+1}" y="${y(b)}" width="${bw}" height="${y(0)-y(b)}" rx="3" fill="var(--sun)"><title>朗讀 ${b}%</title></rect>`;
@@ -890,28 +898,28 @@ function renderRecords(){
   body.innerHTML = `
     <div class="tiles">
       <div class="tile"><div class="n">${pct(c,n)}%</div><div class="l">選擇題一次答對率</div></div>
-      <div class="tile"><div class="n">${pct(sp,n)}%</div><div class="l">朗讀通過率</div></div>
+      <div class="tile"><div class="n">${spRate(items)}</div><div class="l">朗讀唸對率（僅供參考）</div></div>
       <div class="tile"><div class="n">${n}</div><div class="l">累計作答題數</div></div>
       <div class="tile"><div class="n">${all.length}</div><div class="l">練習次數</div></div>
     </div>
     <section class="blk"><h2>最近 ${last.length} 次練習</h2>
       <div class="chart">${svg}</div>
-      <div class="legend"><span style="--c:var(--accent)">選擇題一次答對</span><span style="--c:var(--sun)">朗讀通過</span></div>
+      <div class="legend"><span style="--c:var(--accent)">選擇題一次答對</span><span style="--c:var(--sun)">朗讀唸對（有錄到聲音的題目）</span></div>
     </section>
     <section class="blk"><h2>各故事成績</h2>
-      <div class="tbl"><table><thead><tr><th>故事</th><th>次數</th><th>題數</th><th>選擇題正確率</th><th>朗讀通過率</th><th>最近練習</th><th></th></tr></thead><tbody>
-      ${[...byStory.values()].map(o => `<tr><td>${esc(o.title)}</td><td>${o.sessions}</td><td>${o.n}</td><td><span class="meter"><i style="width:${pct(o.c,o.n)}%"></i></span>${pct(o.c,o.n)}%</td><td><span class="meter"><i style="width:${pct(o.sp,o.n)}%;background:var(--sun)"></i></span>${pct(o.sp,o.n)}%</td><td>${new Date(o.last).toLocaleDateString("zh-TW")}</td><td><button class="linkbtn" data-detail="${esc(o.id)}">查看單字細節</button></td></tr>`).join("")}
+      <div class="tbl"><table><thead><tr><th>故事</th><th>次數</th><th>題數</th><th>選擇題正確率</th><th>朗讀唸對率</th><th>最近練習</th><th></th></tr></thead><tbody>
+      ${[...byStory.values()].map(o => `<tr><td>${esc(o.title)}</td><td>${o.sessions}</td><td>${o.n}</td><td><span class="meter"><i style="width:${pct(o.c,o.n)}%"></i></span>${pct(o.c,o.n)}%</td><td>${spRate(o.items)}</td><td>${new Date(o.last).toLocaleDateString("zh-TW")}</td><td><button class="linkbtn" data-detail="${esc(o.id)}">查看單字細節</button></td></tr>`).join("")}
       </tbody></table></div>
     </section>
     <section class="blk" id="mastery"></section>
     <section class="blk"><h2>常錯單字</h2>
-      ${weak.length ? `<div class="tbl"><table><thead><tr><th>單字</th><th>故事</th><th>作答</th><th>選錯</th><th>朗讀未過</th><th>錯誤率</th><th>常被誤選成</th></tr></thead><tbody>
-      ${weak.map(o => `<tr><td><b>${esc(o.word)}</b></td><td>${esc(o.title)}</td><td>${o.n}</td><td>${o.wrong}</td><td>${o.sfail}</td><td>${pct(Math.max(o.wrong,o.sfail),o.n)}%</td><td>${Object.entries(o.picks).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([w,k])=>`${esc(w)}×${k}`).join("、")||"—"}</td></tr>`).join("")}
+      ${weak.length ? `<div class="tbl"><table><thead><tr><th>單字</th><th>故事</th><th>作答</th><th>選錯</th><th>錯誤率</th><th>朗讀沒辨識成功</th><th>常被誤選成</th></tr></thead><tbody>
+      ${weak.map(o => `<tr><td><b>${esc(o.word)}</b></td><td>${esc(o.title)}</td><td>${o.n}</td><td>${o.wrong}</td><td>${pct(o.wrong,o.n)}%</td><td>${o.sfail}</td><td>${Object.entries(o.picks).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([w,k])=>`${esc(w)}×${k}`).join("、")||"—"}</td></tr>`).join("")}
       </tbody></table></div>` : `<div class="empty">目前沒有答錯的單字。</div>`}
     </section>
     <section class="blk"><h2>練習明細</h2>
       <div class="tbl"><table><thead><tr><th>日期時間</th><th>故事</th><th>模式</th><th>完成</th><th>選擇題</th><th>朗讀</th></tr></thead><tbody>
-      ${all.slice().reverse().slice(0,50).map(s => { const k=s.items.length; return `<tr><td>${new Date(s.date).toLocaleString("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</td><td>${esc(s.title)}</td><td>${({ten:"隨機10題",all:"全部",wrong:"錯題複習"})[s.mode]||s.mode}</td><td>${k}/${s.total}</td><td>${pct(s.items.filter(x=>x.firstTry).length,k)}%</td><td>${pct(s.items.filter(x=>x.speak==="pass"||x.speak==="manual").length,k)}%</td></tr>`; }).join("")}
+      ${all.slice().reverse().slice(0,50).map(s => { const k=s.items.length; return `<tr><td>${new Date(s.date).toLocaleString("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</td><td>${esc(s.title)}</td><td>${({ten:"隨機10題",all:"全部",wrong:"錯題複習"})[s.mode]||s.mode}</td><td>${k}/${s.total}</td><td>${pct(s.items.filter(x=>x.firstTry).length,k)}%</td><td>${spRate(s.items)}</td></tr>`; }).join("")}
       </tbody></table></div>
     </section>
     <div class="confirm" id="clearBox"></div>`;
