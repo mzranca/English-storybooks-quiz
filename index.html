@@ -149,6 +149,23 @@ table.words td.sent u{color:var(--fg);font-weight:700;text-decoration-color:var(
 .st.ok{background:var(--good-soft);color:var(--good)} .st.learning{background:var(--bad-soft);color:var(--bad)} .st.new{background:var(--surface-2);color:var(--muted)}
 .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .dot.y{background:var(--good)} .dot.x{background:var(--bad)}
+.wordbtn{background:none;border:0;padding:0;font:inherit;font-weight:700;color:var(--accent);text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+.wp{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,#000 45%,transparent);display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wp-card{background:var(--surface);color:var(--fg);border-radius:18px;padding:22px;width:min(420px,100%);display:grid;gap:10px;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.wp-x{position:absolute;top:8px;right:10px;border:0;background:none;color:var(--muted);font-size:26px;line-height:1;padding:4px 8px}
+.wp-word{font-family:var(--display);font-size:34px;color:var(--accent)}
+.wp-pos{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pos{background:var(--sun-soft);color:var(--fg);border-radius:999px;padding:2px 12px;font-size:14px;font-weight:700}
+.wp-zh{font-size:24px;font-weight:700}
+.wp-sent{color:var(--muted);font-size:15px}
+.wp-sent u{color:var(--fg);font-weight:700;text-decoration-color:var(--sun);text-decoration-thickness:3px}
+.vword{display:flex;align-items:center;gap:14px;margin:6px 0 20px;flex-wrap:wrap}
+#vWord{font-family:var(--display);font-size:clamp(36px,8vw,52px);font-weight:700;color:var(--accent);line-height:1.1}
+.opts.zh .opt{font-family:var(--body);font-size:19px;font-weight:700}
+.vfeed{margin-top:18px;border-radius:14px;padding:16px;display:grid;gap:8px}
+.vfeed.ok{background:var(--good-soft)} .vfeed.no{background:var(--bad-soft)}
+.vfeed .r{font-weight:700;font-size:18px}
 .confirm{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -172,7 +189,7 @@ table.words td.sent u{color:var(--fg);font-weight:700;text-decoration-color:var(
   <!-- HOME -->
   <section id="v-home" hidden>
     <h1>選一個故事開始練習</h1>
-    <p class="lead">看完影片後，從句子裡挑出正確的單字，再大聲唸出來才算過關。</p>
+    <p class="lead">看完影片後，從句子裡挑出正確的單字，再練習唸唸看；也可以只做「單字測驗（英翻中）」。</p>
     <div class="stories" id="storyList"></div>
     <div class="howto">
       <b>新增故事：</b>把新的 YouTube 連結交給 Claude，會幫你把字幕整理成題目並更新到這個網頁檔，重新整理頁面就會出現在這裡。<br>
@@ -228,12 +245,26 @@ table.words td.sent u{color:var(--fg);font-weight:700;text-decoration-color:var(
     <div class="card result" id="qResult" hidden></div>
   </section>
 
+  <!-- VOCAB QUIZ -->
+  <section id="v-vocab" hidden>
+    <div class="qhead"><h2 id="vTitle"></h2><span class="t" id="vCount"></span></div>
+    <div class="road" aria-hidden="true"><div class="fill" id="vFill"></div></div>
+    <div class="card" id="vCard">
+      <p class="msg">單字測驗：選出這個英文單字的中文意思</p>
+      <div class="vword"><span id="vWord"></span><button class="btn ghost" id="vSay" aria-label="聽唸法">🔊</button></div>
+      <div class="opts zh" id="vOpts"></div>
+      <div class="vfeed" id="vFeed" hidden></div>
+    </div>
+    <div class="card result" id="vResult" hidden></div>
+  </section>
+
   <!-- RECORDS -->
   <section id="v-records" hidden>
     <h1>學習紀錄</h1>
     <div id="recBody"></div>
   </section>
 </main>
+<div id="wordPop" class="wp" hidden></div>
 
 <!-- ===== 故事題庫（新增故事時更新這一段）===== -->
 <script>
@@ -257,6 +288,7 @@ window.STORIES = [
     youtubeId: "4VNZD2JlALM",
     duration: 384,
     extraWords: [["helmet", "n"], ["basket", "n"], ["snack", "n"], ["bell", "n"], ["hungry", "adj"], ["soft", "adj"], ["slowly", "adv"], ["quickly", "adv"], ["under", "prep"]],
+    vocab: {"new": "adj.|新的", "wait": "v.|等待", "put": "v.|放", "find": "v.|找到", "without": "prep.|沒有…；不帶著…", "bed": "n.|床", "lost": "adj.|遺失的；不見的", "today": "adv.|今天", "forget": "v.|忘記", "riding": "v.|騎（車）|ride 的 -ing 形", "way": "n.|方向；路", "think": "v.|想；認為", "fast": "adj.|快的", "best": "adj.|最好的|good 的最高級", "yellow": "adj.|黃色的", "everything": "pron.|所有東西；一切", "nice": "adj.|好的；不錯的", "like": "v.|喜歡；想要（would like）", "got": "v.|得到|get 的過去式", "sharing": "v.|分享|share 的 -ing 形", "use": "v.|使用", "fit": "v.|（大小）適合", "long": "adj.|（時間）長的；久的", "see": "v.|看見", "show": "v.|給…看；展示", "brought": "v.|帶來|bring 的過去式", "together": "adv.|一起", "wheels": "n.|輪子|wheel 的複數", "hard": "adj.|困難的", "learn": "v.|學會", "still": "adv.|仍然；還是", "feel": "v.|感覺", "promise": "v.|答應；保證", "should": "aux.|應該", "house": "n.|房子；家", "good": "adj.|好的", "tired": "adj.|累的；疲倦的", "eat": "v.|吃", "bring": "v.|帶來", "decide": "v.|決定", "know": "v.|知道", "walk": "n.|散步", "full": "adj.|吃飽的", "idea": "n.|主意；想法", "friends": "n.|朋友們|friend 的複數"},
     questions: [
       [11,  "I have a new bike.", "new", "adj", "n"],
       [11,  "I cannot wait to ride it.", "wait", "v,n"],
@@ -313,6 +345,7 @@ window.STORIES = [
     youtubeId: "GcfNAMYbP2Y",
     duration: 354,
     extraWords: [["tent", "n"], ["blanket", "n"], ["pillow", "n"], ["toothbrush", "n"], ["happy", "adj"], ["tired", "adj"], ["slowly", "adv"], ["quickly", "adv"], ["under", "prep"]],
+    vocab: {"tonight": "adv.|今晚", "excited": "adj.|興奮的", "pack": "v.|打包", "need": "v.|需要", "fit": "v.|裝得下", "leave": "v.|留下；離開", "sorry": "adj.|抱歉的", "afraid": "adj.|害怕的", "room": "n.|空間；位置", "old": "adj.|年紀大的；老的", "stay": "v.|待著；留下", "secret": "n.|秘密", "ready": "adj.|準備好的", "everything": "pron.|所有東西；一切", "sleep": "v.|睡覺", "fun": "n.|樂趣；好玩", "like": "prep.|像…一樣", "surprise": "n.|驚喜", "worry": "v.|擔心", "rain": "v.|下雨", "bring": "v.|帶來", "thought": "v.|想到|think 的過去分詞", "hiding": "v.|藏；躲|hide 的 -ing 形", "laugh": "v.|笑", "promise": "v.|答應；保證", "without": "prep.|沒有…；不帶著…", "name": "n.|名字", "first": "adj.|第一的；第一次的", "well": "adj.|（身體）健康的、舒服的", "still": "adv.|還是；仍然", "forgot": "v.|忘記|forget 的過去式", "guess": "v.|猜想；我想（I guess）", "outside": "adv.|在外面", "better": "adj.|比較好的|good / well 的比較級", "friend": "n.|朋友", "idea": "n.|主意；想法", "full": "adj.|充滿…的（full of）", "last": "adj.|最後的", "thing": "n.|事情；東西", "good": "adj.|好的", "hide": "v.|躲藏", "count": "v.|數數", "come": "v.|來"},
     questions: [
       [8, "I am going to a sleepover tonight.", "tonight", "adv,n", "adj,pron"],
       [16, "I am so excited.", "excited", "adj", "n,ved,ving"],
@@ -367,6 +400,7 @@ window.STORIES = [
     youtubeId: "O45fBoww3qE",
     duration: 330,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["jump", "v"], ["swim", "v"]],
+    vocab: {"home": "n.|家", "letter": "n.|信", "strange": "adj.|奇怪的", "tired": "adj.|累的；疲倦的", "find": "v.|找到", "build": "v.|建造", "never": "adv.|永不；從不", "hope": "v.|希望", "feet": "n.|腳|foot 的複數", "destroy": "v.|摧毀", "help": "v.|幫忙", "tree": "n.|樹", "nice": "adj.|好的；不錯的", "tell": "v.|告訴", "time": "n.|時間", "kind": "adj.|善良的；親切的", "create": "v.|創造", "special": "adj.|特別的", "powerful": "adj.|強大的", "deep": "adv.|在深處", "able": "adj.|能夠的（be able to）", "map": "n.|地圖", "safe": "adj.|安全的", "way": "n.|路；道路", "careful": "adj.|小心的", "dangerous": "adj.|危險的", "stop": "v.|阻止；停止", "many": "adj.|很多的", "along": "prep.|沿著", "cold": "adj.|冷的", "dark": "adj.|黑暗的", "secret": "adj.|秘密的", "made": "v.|做到；完成（I made it! 我成功了）|make 的過去式"},
     questions: [
       [14, "It is the home of the bravest hero in all the land.", "home", "n"],
       [25, "Today, Super Rabbit Boy received a letter.", "letter", "n"],
@@ -411,6 +445,7 @@ window.STORIES = [
     youtubeId: "RckdxHFBv2k",
     duration: 458,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["jump", "v"], ["swim", "v"]],
+    vocab: {"door": "n.|門", "next": "adv.|接下來", "question": "n.|問題", "ghost": "n.|鬼；幽靈", "friendly": "adj.|友善的", "searching": "v.|尋找|search 的 -ing 形", "keys": "n.|鑰匙|key 的複數", "beat": "v.|打敗", "easy": "adj.|容易的", "room": "n.|房間", "above": "prep.|在…上方", "slow": "v.|使變慢（slow down）", "sound": "n.|聲音", "quickly": "adv.|快速地", "stuck": "adj.|卡住的", "time": "n.|時間（just in time 剛好來得及）", "bright": "adj.|明亮的；耀眼的", "poor": "adj.|可憐的", "final": "adj.|最後的", "light": "n.|光；光線", "breath": "n.|呼吸（catch his breath 喘口氣）", "harder": "adj.|更難的|hard 的比較級", "hidden": "adj.|被藏起來的；隱藏的", "wish": "v.|但願；希望", "corner": "n.|角落", "blue": "adj.|藍色的", "middle": "n.|中間", "water": "n.|水", "perfect": "adj.|完美的；最適合的", "fill": "v.|裝滿；填滿", "around": "adv.|四處（look around 環顧四周）", "everywhere": "adv.|到處", "maybe": "adv.|也許", "same": "adj.|相同的", "think": "v.|思考", "wonder": "v.|想知道；好奇", "wall": "n.|牆"},
     questions: [
       [2, "He sees a large door with three locks on it.", "door", "n"],
       [15, "What should I do next?", "next", "adv,adj", "n,ved,ving"],
@@ -459,6 +494,7 @@ window.STORIES = [
     youtubeId: "0_3_bWEPR3E",
     duration: 318,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["jump", "v"], ["swim", "v"]],
+    vocab: {"great": "adj.|很棒的", "pure": "adj.|純粹的", "light": "n.|光", "body": "n.|身體", "now": "adv.|現在", "main": "adj.|主要的", "burn": "v.|燒", "everywhere": "adv.|到處", "soon": "adv.|很快地；不久", "left": "adj.|剩下的|leave 的過去分詞", "bright": "adj.|閃亮的；耀眼的", "three": "num.|三", "together": "adv.|一起", "without": "prep.|沒有…；不帶著…", "giant": "adj.|巨大的", "strong": "adj.|強壯的", "fast": "adv.|快地（Not so fast! 別急！）", "knew": "v.|知道|know 的過去式", "followed": "v.|跟隨|follow 的過去式", "work": "n.|工作", "ever": "adv.|曾經；任何時候", "secret": "n.|秘密", "smart": "adj.|聰明的", "plans": "n.|計畫|plan 的複數", "again": "adv.|再一次", "back": "adv.|回來；回去", "team": "n.|隊伍；團隊", "stay": "v.|待著；留下", "surprise": "n.|驚喜", "everyone": "pron.|每個人"},
     questions: [
       [8, "You keep playing. You're doing great.", "great", "adj", "n,ved,ving"],
       [13, "Super Rabbit Boy enters a room of pure light.", "pure", "adj", "n,ved,ving"],
@@ -625,7 +661,9 @@ function micUI(){
 let quiz = null;
 function show(view){
   if (view === "quiz" && !quiz) view = "home";
-  ["home","quiz","records"].forEach(v => { $("#v-"+v).hidden = v !== view; });
+  if (view === "vocab" && !vq) view = "home";
+  closeWord();
+  ["home","quiz","records","vocab"].forEach(v => { $("#v-"+v).hidden = v !== view; });
   document.querySelectorAll(".nav button").forEach(b => { if (b.dataset.go === view) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   $("#navQuiz").disabled = !quiz;
   if (view === "home") renderHome();
@@ -644,7 +682,7 @@ const spRate = arr => { const t = arr.filter(spTried).length; return t ? pct(arr
 
 /* ---------- home ---------- */
 function storyStats(id){
-  const ss = loadRec().sessions.filter(s => s.storyId === id);
+  const ss = loadRec().sessions.filter(s => s.storyId === id && s.type !== "vocab");
   let n=0, c=0, sp=0, best=null;
   ss.forEach(s => { const k=s.items.length; if(!k) return; const cc=s.items.filter(x=>x.firstTry).length; n+=k; c+=cc; sp+=s.items.filter(spOk).length; if(k>=5) best=Math.max(best??0, pct(cc,k)); });
   return { sessions: ss.filter(s=>s.items.length).length, n, c, sp, best };
@@ -652,7 +690,7 @@ function storyStats(id){
 function wrongIdx(id){
   // keep a word in review until its latest attempt was fully correct
   const last = new Map();
-  loadRec().sessions.filter(s => s.storyId === id).sort((a,b)=>a.date-b.date).forEach(s => s.items.forEach(x => last.set(x.qi, x.firstTry)));
+  loadRec().sessions.filter(s => s.storyId === id && s.type !== "vocab").sort((a,b)=>a.date-b.date).forEach(s => s.items.forEach(x => last.set(x.qi, x.firstTry)));
   const st = STORIES.find(s => s.id === id), max = st ? st.questions.length : 0;
   return [...last].filter(([i,ok]) => !ok && i < max).map(([i]) => i);
 }
@@ -671,10 +709,11 @@ function renderHome(){
           <button class="btn" data-s="${si}" data-m="ten">隨機 10 題</button>
           <button class="btn ghost" data-s="${si}" data-m="all">全部 ${n} 題（照故事順序）</button>
           <button class="btn ghost" data-s="${si}" data-m="wrong" ${w?"":"disabled"}>錯題複習${w?`（${w}）`:""}</button>
+          <button class="btn ghost" data-s="${si}" data-m="vocab">單字測驗（英翻中）</button>
         </div>
       </div></article>`;
   }).join("");
-  el.querySelectorAll("button[data-s]").forEach(b => b.onclick = () => startQuiz(+b.dataset.s, b.dataset.m));
+  el.querySelectorAll("button[data-s]").forEach(b => b.onclick = () => b.dataset.m === "vocab" ? startVocab(+b.dataset.s) : startQuiz(+b.dataset.s, b.dataset.m));
 }
 
 /* ---------- quiz ---------- */
@@ -818,12 +857,149 @@ function showResult(){
   r.querySelectorAll("[data-say]").forEach(b => b.onclick = () => say(b.dataset.say, 0.8));
 }
 
+/* ---------- word meanings ---------- */
+const POS = { "n.":"名詞", "v.":"動詞", "adj.":"形容詞", "adv.":"副詞", "prep.":"介系詞", "pron.":"代名詞", "aux.":"助動詞", "num.":"數詞" };
+function wordInfo(st, w){
+  const v = (st.vocab || {})[w]; if (!v) return null;
+  const [pos, zh, note] = v.split("|");
+  return { pos, posZh: POS[pos] || pos, zh, note: note || "" };
+}
+let wpReturn = null;
+function openWord(st, qi, from){
+  const q = qObj(st, qi), info = wordInfo(st, q.a), [pre, mid, post] = splitSentence(q), t = Math.max(0, q.t - 1);
+  const d = $("#wordPop");
+  d.innerHTML = `<div class="wp-card" role="dialog" aria-modal="true" aria-labelledby="wpTitle">
+    <button class="wp-x" id="wpClose" aria-label="關閉">×</button>
+    <div class="row"><h3 id="wpTitle" class="wp-word">${esc(q.a)}</h3><button class="btn ghost" id="wpSay" aria-label="聽唸法">🔊</button></div>
+    ${info ? `<div class="wp-pos"><span class="pos">${esc(info.posZh)}　${esc(info.pos)}</span>${info.note ? `<span class="msg">${esc(info.note)}</span>` : ""}</div>
+    <div class="wp-zh">${esc(info.zh)}</div>` : `<div class="msg">這個單字還沒有中文解釋。</div>`}
+    <div class="wp-sent">${esc(pre)}<u>${esc(mid)}</u>${esc(post)}</div>
+    <a href="https://www.youtube.com/watch?v=${esc(st.youtubeId)}&t=${t}s" target="_blank" rel="noopener">▶ 看影片這段（${fmtT(t)}）</a>
+  </div>`;
+  d.hidden = false; wpReturn = from || null;
+  $("#wpClose").onclick = closeWord;
+  $("#wpSay").onclick = () => say(q.a, 0.8);
+  $("#wpClose").focus();
+}
+function closeWord(){
+  const d = $("#wordPop"); if (!d || d.hidden) return;
+  d.hidden = true; d.innerHTML = "";
+  if (wpReturn) { try { wpReturn.focus(); } catch(e){} wpReturn = null; }
+}
+$("#wordPop").addEventListener("click", e => { if (e.target.id === "wordPop") closeWord(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeWord(); });
+
+/* ---------- vocab quiz: English word -> Chinese meaning ---------- */
+let vq = null;
+function startVocab(si, onlyWords){
+  const st = STORIES[si];
+  const seen = new Set(); let list = [];
+  st.questions.forEach((q, i) => { const k = q[2].toLowerCase(); if (!seen.has(k) && wordInfo(st, q[2])) { seen.add(k); list.push(i); } });
+  if (onlyWords) list = list.filter(i => onlyWords.includes(st.questions[i][2]));
+  list = shuffle(list);
+  if (!list.length) return;
+  const rec = loadRec();
+  rec.sessions = rec.sessions.filter(s => s.items && s.items.length);
+  const session = { id: Date.now().toString(36), type: "vocab", storyId: st.id, title: st.title, mode: onlyWords ? "wrong" : "all", date: Date.now(), total: list.length, items: [] };
+  rec.sessions.push(session); saveRec(rec);
+  vq = { st, si, list, pos: 0, session };
+  $("#vResult").hidden = true; $("#vCard").hidden = false;
+  show("vocab"); renderV();
+}
+// answer choices hide the bracketed hints (they often contain the English word)
+const zhShort = z => z.replace(/（[^）]*）/g, "").trim();
+const zhParts = z => z.replace(/（[^）]*）/g, "").split(/[；、]/).map(s => s.trim()).filter(Boolean);
+function tooClose(a, b){ const A = zhParts(a), B = zhParts(b); return A.some(x => B.some(y => x.includes(y) || y.includes(x))); }
+function vOptions(st, w){
+  const right = zhShort(wordInfo(st, w).zh), picks = [];
+  const pools = [Object.keys(st.vocab), ...STORIES.filter(s => s !== st).map(s => Object.keys(s.vocab || {}))];
+  for (const [n, keys] of pools.entries()){
+    const src = n === 0 ? st : STORIES.filter(s => s !== st)[n-1];
+    for (const k of shuffle(keys)){
+      if (picks.length >= 3) break;
+      if (k.toLowerCase() === w.toLowerCase()) continue;
+      const z = zhShort(wordInfo(src, k).zh);
+      if (tooClose(z, right) || picks.some(p => tooClose(p, z))) continue;
+      picks.push(z);
+    }
+    if (picks.length >= 3) break;
+  }
+  return shuffle([right, ...picks]);
+}
+function renderV(){
+  const { st, list, pos } = vq, q = qObj(st, list[pos]);
+  vq.cur = { q, info: wordInfo(st, q.a), answered: false };
+  $("#vTitle").textContent = st.title + "｜單字測驗";
+  $("#vCount").textContent = `第 ${pos+1} / ${list.length} 題`;
+  $("#vFill").style.width = (pos / list.length * 100) + "%";
+  $("#vWord").textContent = q.a;
+  $("#vFeed").hidden = true; $("#vFeed").innerHTML = "";
+  $("#vOpts").innerHTML = vOptions(st, q.a).map(z => `<button class="opt" data-z="${esc(z)}">${esc(z)}</button>`).join("");
+  $("#vOpts").querySelectorAll(".opt").forEach(b => b.onclick = () => answerV(b));
+  say(q.a, 0.8);
+}
+$("#vSay").onclick = () => vq && say(vq.cur.q.a, 0.8);
+function answerV(b){
+  const c = vq.cur; if (c.answered) return;
+  c.answered = true;
+  const right = zhShort(c.info.zh), ok = b.dataset.z === right;
+  $("#vOpts").querySelectorAll(".opt").forEach(x => { x.disabled = true; if (x.dataset.z === right) x.classList.add("right"); });
+  if (!ok) b.classList.add("wrong");
+  vq.session.items.push({ qi: c.q.i, word: c.q.a, correct: ok, picked: b.dataset.z });
+  const rec = loadRec(); const k = rec.sessions.findIndex(s => s.id === vq.session.id);
+  if (k >= 0) rec.sessions[k] = vq.session; else rec.sessions.push(vq.session); saveRec(rec);
+  const [pre, mid, post] = splitSentence(c.q), last = vq.pos + 1 >= vq.list.length;
+  const f = $("#vFeed"); f.className = "vfeed " + (ok ? "ok" : "no"); f.hidden = false;
+  f.innerHTML = `<div class="r">${ok ? "✓ 答對了！" : `✗ 正確答案是「${esc(right)}」`}</div>
+    ${c.info.zh !== right ? `<div>${esc(c.info.zh)}</div>` : ""}
+    <div class="wp-pos"><b>${esc(c.q.a)}</b><span class="pos">${esc(c.info.posZh)}　${esc(c.info.pos)}</span>${c.info.note ? `<span class="msg">${esc(c.info.note)}</span>` : ""}</div>
+    <div class="wp-sent">${esc(pre)}<u>${esc(mid)}</u>${esc(post)}</div>
+    <div class="row"><button class="btn ghost" id="vSay2">🔊 再聽一次</button><button class="btn" id="vNext">${last ? "看結果 →" : "下一題 →"}</button></div>`;
+  $("#vSay2").onclick = () => say(c.q.a, 0.8);
+  $("#vNext").onclick = () => { vq.pos++; if (vq.pos < vq.list.length) { renderV(); window.scrollTo(0,0); } else showVResult(); };
+  $("#vNext").focus();
+}
+function showVResult(){
+  const s = vq.session, n = s.items.length, c = s.items.filter(x => x.correct).length, wrong = s.items.filter(x => !x.correct);
+  $("#vFill").style.width = "100%";
+  $("#vCard").hidden = true;
+  const r = $("#vResult"); r.hidden = false;
+  r.innerHTML = `<h2>單字測驗完成！</h2>
+    <div class="big">${pct(c,n)}%</div>
+    <div>答對 <b>${c} / ${n}</b> 個單字</div>
+    ${wrong.length ? `<div class="miss"><b>答錯的單字</b>${wrong.map(x => { const i = wordInfo(vq.st, x.word); return `<div><button class="linkbtn" data-say="${esc(x.word)}">🔊</button> <b>${esc(x.word)}</b>　${esc(i.posZh)}　正確：${esc(i.zh)}　<span class="msg">你選了：${esc(x.picked)}</span></div>`; }).join("")}</div>` : `<div>全部答對，太厲害了！</div>`}
+    <div class="row" style="justify-content:center">
+      ${wrong.length ? `<button class="btn" id="vrWrong">再練答錯的單字</button>` : ""}
+      <button class="btn ghost" id="vrAgain">整組再測一次</button>
+      <button class="btn ghost" id="vrHome">回到故事</button>
+      <button class="btn ghost" id="vrRec">看學習紀錄</button>
+    </div>`;
+  const si = vq.si;
+  if (wrong.length) $("#vrWrong").onclick = () => startVocab(si, wrong.map(x => x.word));
+  $("#vrAgain").onclick = () => startVocab(si);
+  $("#vrHome").onclick = () => show("home");
+  $("#vrRec").onclick = () => show("records");
+  r.querySelectorAll("[data-say]").forEach(b => b.onclick = () => say(b.dataset.say, 0.8));
+}
+function vocabRecordsHTML(allV){
+  const by = new Map();
+  allV.forEach(s => { const o = by.get(s.storyId) || { title: s.title, sessions: 0, n: 0, c: 0, last: 0, best: 0 }; const k = s.items.length, c = s.items.filter(x => x.correct).length; o.sessions++; o.n += k; o.c += c; o.last = Math.max(o.last, s.date); if (s.mode === "all" && k === s.total) o.best = Math.max(o.best, pct(c,k)); by.set(s.storyId, o); });
+  return `<section class="blk"><h2>單字測驗（英翻中）</h2>
+    ${allV.length ? `<div class="tbl"><table><thead><tr><th>故事</th><th>次數</th><th>作答數</th><th>答對率</th><th>整組最佳</th><th>最近測驗</th></tr></thead><tbody>
+    ${[...by.values()].map(o => `<tr><td>${esc(o.title)}</td><td>${o.sessions}</td><td>${o.n}</td><td><span class="meter"><i style="width:${pct(o.c,o.n)}%"></i></span>${pct(o.c,o.n)}%</td><td>${o.best ? o.best + "%" : "—"}</td><td>${new Date(o.last).toLocaleDateString("zh-TW")}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="msg">每個單字的英翻中成績，在上方「單字掌握度」表格的「英翻中」欄位。</p>` : `<div class="empty">還沒有單字測驗紀錄。到「故事」頁按「單字測驗（英翻中）」開始。</div>`}
+  </section>`;
+}
+
 /* ---------- records ---------- */
 let confirmClear = false, recStory = null, recFilter = "all";
 function renderMastery(){
   const box = $("#mastery"); if (!box) return;
   const st = STORIES.find(s => s.id === recStory); if (!st) return;
-  const sessions = loadRec().sessions.filter(s => s.storyId === st.id && s.items.length).sort((a,b) => a.date - b.date);
+  const sessions = loadRec().sessions.filter(s => s.storyId === st.id && s.items.length && s.type !== "vocab").sort((a,b) => a.date - b.date);
+  const vAtt = {};
+  loadRec().sessions.filter(s => s.storyId === st.id && s.type === "vocab").forEach(s => s.items.forEach(x => { const o = vAtt[x.word] || (vAtt[x.word] = {n:0, c:0}); o.n++; if (x.correct) o.c++; }));
   const att = st.questions.map(() => []);
   sessions.forEach(s => s.items.forEach(x => { if (att[x.qi]) att[x.qi].push({ ...x, date: s.date }); }));
   const rows = st.questions.map((q, i) => {
@@ -847,14 +1023,15 @@ function renderMastery(){
       <i style="width:${ok/N*100}%;background:var(--good)"></i><i style="width:${lrn/N*100}%;background:var(--bad)"></i><i style="width:${nw/N*100}%;background:var(--surface-2)"></i>
     </div>
     <div class="legend"><span style="--c:var(--good)">已學會 ${ok}</span><span style="--c:var(--bad)">還沒學會 ${lrn}</span><span style="--c:var(--line)">未練習 ${nw}</span></div>
-    <p class="msg">「已學會」= 最近一次作答時，選擇題一次就選對。朗讀結果只做紀錄，不影響是否學會。</p>
+    <p class="msg">「已學會」= 最近一次作答時，選擇題一次就選對。朗讀結果只做紀錄，不影響是否學會。點單字可以看中文意思和詞性。</p>
     <div class="filters">${[["all","全部"],["todo","還沒學會"],["new","未練習"],["ok","已學會"]].map(([k,t]) => `<button data-f="${k}" aria-pressed="${recFilter===k}">${t}</button>`).join("")}</div>
-    ${shown.length ? `<div class="tbl"><table class="words"><thead><tr><th>#</th><th>單字</th><th>句子</th><th>狀態</th><th>選擇題答對</th><th>朗讀唸對</th><th>唸法</th><th>最近作答</th><th>曾誤選</th></tr></thead><tbody>
+    ${shown.length ? `<div class="tbl"><table class="words"><thead><tr><th>#</th><th>單字</th><th>句子</th><th>狀態</th><th>選擇題答對</th><th>英翻中</th><th>朗讀唸對</th><th>唸法</th><th>最近作答</th><th>曾誤選</th></tr></thead><tbody>
     ${shown.map(r => { const [pre, mid, post] = splitSentence(qObj(st, r.i)); return `<tr>
-      <td>${r.i+1}</td><td><b>${esc(r.q[2])}</b></td>
+      <td>${r.i+1}</td><td><button class="wordbtn" data-qi="${r.i}" title="看中文意思與詞性">${esc(r.q[2])}</button></td>
       <td class="sent">${esc(pre)}<u>${esc(mid)}</u>${esc(post)}</td>
       <td><span class="st ${r.status}">${label[r.status]}</span></td>
       <td>${r.n ? `${r.c}/${r.n}（${pct(r.c,r.n)}%）` : "—"}</td>
+      <td>${vAtt[r.q[2]] ? `${vAtt[r.q[2]].c}/${vAtt[r.q[2]].n}` : "—"}</td>
       <td>${r.st ? `${r.sp}/${r.st}` : "—"}</td>
       <td><button class="linkbtn" data-say="${esc(r.q[2])}" aria-label="聽 ${esc(r.q[2])} 的唸法">🔊</button></td>
       <td>${r.recent.map(x => `<span class="dot ${x.firstTry ? "y" : "x"}" title="${new Date(x.date).toLocaleDateString("zh-TW")}：${x.firstTry ? "選對" : "選錯"}、${spOk(x) ? "朗讀唸對" : x.speak === "fail" ? "朗讀沒辨識成功" : "朗讀沒錄到"}"></span>`).join("") || "—"}</td>
@@ -863,11 +1040,13 @@ function renderMastery(){
   box.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { recStory = b.dataset.st; recFilter = "all"; renderMastery(); });
   box.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { recFilter = b.dataset.f; renderMastery(); });
   box.querySelectorAll("[data-say]").forEach(b => b.onclick = () => say(b.dataset.say, 0.8));
+  box.querySelectorAll("[data-qi]").forEach(b => b.onclick = () => openWord(st, +b.dataset.qi, b));
 }
 function renderRecords(){
-  const all = loadRec().sessions.filter(s => s.items.length);
+  const all = loadRec().sessions.filter(s => s.items.length && s.type !== "vocab");
+  const allV = loadRec().sessions.filter(s => s.items.length && s.type === "vocab");
   const body = $("#recBody");
-  if (!all.length){ body.innerHTML = `<p class="lead">完成第一題後，答題結果會自動記錄在這裡。</p><div class="empty">還沒有紀錄。回到「故事」選一個開始練習吧。</div>`; return; }
+  if (!all.length && !allV.length){ body.innerHTML = `<p class="lead">完成第一題後，答題結果會自動記錄在這裡。</p><div class="empty">還沒有紀錄。回到「故事」選一個開始練習吧。</div>`; return; }
   const items = all.flatMap(s => s.items.map(x => ({...x, storyId: s.storyId, title: s.title})));
   const n = items.length, c = items.filter(x => x.firstTry).length;
 
@@ -912,6 +1091,7 @@ function renderRecords(){
       </tbody></table></div>
     </section>
     <section class="blk" id="mastery"></section>
+    ${vocabRecordsHTML(allV)}
     <section class="blk"><h2>常錯單字</h2>
       ${weak.length ? `<div class="tbl"><table><thead><tr><th>單字</th><th>故事</th><th>作答</th><th>選錯</th><th>錯誤率</th><th>朗讀沒辨識成功</th><th>常被誤選成</th></tr></thead><tbody>
       ${weak.map(o => `<tr><td><b>${esc(o.word)}</b></td><td>${esc(o.title)}</td><td>${o.n}</td><td>${o.wrong}</td><td>${pct(o.wrong,o.n)}%</td><td>${o.sfail}</td><td>${Object.entries(o.picks).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([w,k])=>`${esc(w)}×${k}`).join("、")||"—"}</td></tr>`).join("")}
