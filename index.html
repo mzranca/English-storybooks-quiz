@@ -166,6 +166,9 @@ table.words td.sent u{color:var(--fg);font-weight:700;text-decoration-color:var(
 .vfeed{margin-top:18px;border-radius:14px;padding:16px;display:grid;gap:8px}
 .vfeed.ok{background:var(--good-soft)} .vfeed.no{background:var(--bad-soft)}
 .vfeed .r{font-weight:700;font-size:18px}
+.trans{margin-top:8px;color:var(--muted);font-size:17px;border-left:4px solid var(--sun);padding:2px 0 2px 12px;animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.wp-tr{color:var(--muted);font-size:14px;margin-top:-4px}
 .confirm{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -204,6 +207,7 @@ table.words td.sent u{color:var(--fg);font-weight:700;text-decoration-color:var(
 
     <div class="card" id="qCard">
       <div class="sentence" id="qSentence"></div>
+      <div class="trans" id="qTrans" hidden></div>
       <div class="vid">
         <a id="qVidLink" target="_blank" rel="noopener">▶ 到 YouTube 看這段</a>
         <button class="linkbtn" id="qEmbedBtn">在這裡播放影片片段</button>
@@ -289,6 +293,7 @@ window.STORIES = [
     duration: 384,
     extraWords: [["helmet", "n"], ["basket", "n"], ["snack", "n"], ["bell", "n"], ["hungry", "adj"], ["soft", "adj"], ["slowly", "adv"], ["quickly", "adv"], ["under", "prep"]],
     vocab: {"new": "adj.|新的", "wait": "v.|等待", "put": "v.|放", "find": "v.|找到", "without": "prep.|沒有…；不帶著…", "bed": "n.|床", "lost": "adj.|遺失的；不見的", "today": "adv.|今天", "forget": "v.|忘記", "riding": "v.|騎（車）|ride 的 -ing 形", "way": "n.|方向；路", "think": "v.|想；認為", "fast": "adj.|快的", "best": "adj.|最好的|good 的最高級", "yellow": "adj.|黃色的", "everything": "pron.|所有東西；一切", "nice": "adj.|好的；不錯的", "like": "v.|喜歡；想要（would like）", "got": "v.|得到|get 的過去式", "sharing": "v.|分享|share 的 -ing 形", "use": "v.|使用", "fit": "v.|（大小）適合", "long": "adj.|（時間）長的；久的", "see": "v.|看見", "show": "v.|給…看；展示", "brought": "v.|帶來|bring 的過去式", "together": "adv.|一起", "wheels": "n.|輪子|wheel 的複數", "hard": "adj.|困難的", "learn": "v.|學會", "still": "adv.|仍然；還是", "feel": "v.|感覺", "promise": "v.|答應；保證", "should": "aux.|應該", "house": "n.|房子；家", "good": "adj.|好的", "tired": "adj.|累的；疲倦的", "eat": "v.|吃", "bring": "v.|帶來", "decide": "v.|決定", "know": "v.|知道", "walk": "n.|散步", "full": "adj.|吃飽的", "idea": "n.|主意；想法", "friends": "n.|朋友們|friend 的複數"},
+    trans: ["我有一台新腳踏車。", "我等不及要騎它了。", "咦，我把腳踏車安全帽放到哪裡了？", "我一定要找到它。", "沒有它我就不能騎腳踏車。", "它不在我的床底下。", "我的安全帽不見了。", "我今天不能騎腳踏車了。", "我把安全帽放在腳踏車的座椅上，這樣我就不會忘記它在哪裡。", "他正在騎腳踏車。", "他正朝這邊過來。", "你覺得我的新腳踏車怎麼樣？", "我覺得它很快。", "這不是你看過最棒的腳踏車嗎？", "它有一個軟軟的黃色座椅。", "它什麼都有。", "它是一台很棒的腳踏車。", "哈利，你想騎我的腳踏車嗎？", "喔不，你才剛拿到這台腳踏車。", "我不介意分享。", "你可以用我的安全帽。", "它戴在我頭上不合適。", "去我家要花太久的時間。", "我從這裡就看得到你家。", "我會讓你看看。", "你帶了你自己的腳踏車！", "我們可以一起騎。", "你有輔助輪。", "沒有輔助輪騎腳踏車很難。", "等你準備好了，你就會學會的。", "我們還是可以一起騎。", "跟我一起騎，你不會覺得很糗嗎？", "這個我不能保證。", "我們應該去哪裡？", "你家有點心嗎？", "那是一趟很棒的腳踏車之旅。", "騎車讓我好累。", "我去拿點東西給我們吃。", "我應該帶什麼點心呢？", "我決定不了。", "我不知道你會喜歡什麼，所以我全部都帶來了。", "吃完一頓大點心後，我喜歡去散散步。", "我想我太飽了，走不動了。", "我有一個主意。", "為多出來的輪子和好朋友歡呼！"],
     questions: [
       [11,  "I have a new bike.", "new", "adj", "n"],
       [11,  "I cannot wait to ride it.", "wait", "v,n"],
@@ -346,6 +351,7 @@ window.STORIES = [
     duration: 354,
     extraWords: [["tent", "n"], ["blanket", "n"], ["pillow", "n"], ["toothbrush", "n"], ["happy", "adj"], ["tired", "adj"], ["slowly", "adv"], ["quickly", "adv"], ["under", "prep"]],
     vocab: {"tonight": "adv.|今晚", "excited": "adj.|興奮的", "pack": "v.|打包", "need": "v.|需要", "fit": "v.|裝得下", "leave": "v.|留下；離開", "sorry": "adj.|抱歉的", "afraid": "adj.|害怕的", "room": "n.|空間；位置", "old": "adj.|年紀大的；老的", "stay": "v.|待著；留下", "secret": "n.|秘密", "ready": "adj.|準備好的", "everything": "pron.|所有東西；一切", "sleep": "v.|睡覺", "fun": "n.|樂趣；好玩", "like": "prep.|像…一樣", "surprise": "n.|驚喜", "worry": "v.|擔心", "rain": "v.|下雨", "bring": "v.|帶來", "thought": "v.|想到|think 的過去分詞", "hiding": "v.|藏；躲|hide 的 -ing 形", "laugh": "v.|笑", "promise": "v.|答應；保證", "without": "prep.|沒有…；不帶著…", "name": "n.|名字", "first": "adj.|第一的；第一次的", "well": "adj.|（身體）健康的、舒服的", "still": "adv.|還是；仍然", "forgot": "v.|忘記|forget 的過去式", "guess": "v.|猜想；我想（I guess）", "outside": "adv.|在外面", "better": "adj.|比較好的|good / well 的比較級", "friend": "n.|朋友", "idea": "n.|主意；想法", "full": "adj.|充滿…的（full of）", "last": "adj.|最後的", "thing": "n.|事情；東西", "good": "adj.|好的", "hide": "v.|躲藏", "count": "v.|數數", "come": "v.|來"},
+    trans: ["我今晚要去參加過夜派對。", "我好興奮。", "我必須打包我的東西。", "我會需要我的枕頭。", "我沒辦法把這些全部裝進我的背包。", "我得留下一些東西。", "對不起，賽門。", "沒有你，我也不會害怕的。", "還有空間。", "我已經長大了，不玩泰迪熊了。", "你必須待在我的背包裡。", "這會是我們的秘密。", "你準備好參加我們的過夜派對了嗎？", "我需要的東西都帶了。", "這是我們睡覺的地方。", "帳篷會更好玩。", "這會像露營一樣。", "這是一個驚喜。", "別擔心。", "氣象土撥鼠說不會下雨。", "我沒有帶睡袋。", "你什麼都想到了。", "你在背包裡藏了什麼東西嗎？", "我怕你會笑我。", "你答應嗎？", "沒有它我睡不著。", "它的名字叫賴瑞。", "這是它第一次參加過夜派對。", "我覺得不太舒服。", "你還可以留下來過夜嗎？", "我忘了帶防蚊液。", "我想我沒有把每件事都想到。", "沒有防蚊液，我們不能睡在外面。", "我現在覺得好多了。", "謝謝你當我的好朋友。", "那是個好主意。", "我有很多好點子。", "睡覺是過夜派對最後才做的事。", "我們第一件要做的事是什麼？", "我很會玩捉迷藏。", "我讓你先躲。", "閉上眼睛數到十。", "準備好了沒，我來囉！"],
     questions: [
       [8, "I am going to a sleepover tonight.", "tonight", "adv,n", "adj,pron"],
       [16, "I am so excited.", "excited", "adj", "n,ved,ving"],
@@ -401,6 +407,7 @@ window.STORIES = [
     duration: 330,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["jump", "v"], ["swim", "v"]],
     vocab: {"home": "n.|家", "letter": "n.|信", "strange": "adj.|奇怪的", "tired": "adj.|累的；疲倦的", "find": "v.|找到", "build": "v.|建造", "never": "adv.|永不；從不", "hope": "v.|希望", "feet": "n.|腳|foot 的複數", "destroy": "v.|摧毀", "help": "v.|幫忙", "tree": "n.|樹", "nice": "adj.|好的；不錯的", "tell": "v.|告訴", "time": "n.|時間", "kind": "adj.|善良的；親切的", "create": "v.|創造", "special": "adj.|特別的", "powerful": "adj.|強大的", "deep": "adv.|在深處", "able": "adj.|能夠的（be able to）", "map": "n.|地圖", "safe": "adj.|安全的", "way": "n.|路；道路", "careful": "adj.|小心的", "dangerous": "adj.|危險的", "stop": "v.|阻止；停止", "many": "adj.|很多的", "along": "prep.|沿著", "cold": "adj.|冷的", "dark": "adj.|黑暗的", "secret": "adj.|秘密的", "made": "v.|做到；完成（I made it! 我成功了）|make 的過去式"},
+    trans: ["這是全國最勇敢的英雄的家。", "今天，超級兔子男孩收到了一封信。", "他打開了一封奇怪的信。", "我受夠你破壞我所有的計畫了。", "我要去找那個傳說中的超級能量道具。", "我要用它來打造一個超級強大的機器人。", "你再也打不倒我了。", "祝你有糟糕的一天。", "超級兔子男孩跺著腳，皺起了眉頭。", "他會摧毀動物小鎮。", "但是他知道有誰可以幫忙。", "它是整個動物王國最老、最有智慧的樹。", "見到你真好。", "我會把我知道的一切都告訴你。", "很久很久以前，住著一位強大的能量公主。", "她很善良，而且很有魔法。", "她用她的魔法創造了這片土地上所有的能量道具。", "能量道具會給使用它們的人特殊的能力。", "它比她做過的任何能量道具都還要強大。", "她把超級能量道具藏在秘密之地深處的一個秘密地牢裡。", "只有最勇敢、最聰明的英雄才能找到它。", "只有在英雄真的需要時，才能使用這張地圖。", "這些年來，智慧樹一直把它保管得很安全。", "它會為你指路。", "請小心。", "這趟冒險非常危險。", "什麼都阻止不了我。", "一路上，超級兔子男孩經歷了很多冒險。", "接著他沿著無聊橋一路彈跳過去。", "接著他走進了冷冰冰的山洞。", "最後，他穿過了又深又暗的森林。", "這是秘密地牢的入口。", "我成功了！"],
     questions: [
       [14, "It is the home of the bravest hero in all the land.", "home", "n"],
       [25, "Today, Super Rabbit Boy received a letter.", "letter", "n"],
@@ -446,6 +453,7 @@ window.STORIES = [
     duration: 458,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["jump", "v"], ["swim", "v"]],
     vocab: {"door": "n.|門", "next": "adv.|接下來", "question": "n.|問題", "ghost": "n.|鬼；幽靈", "friendly": "adj.|友善的", "searching": "v.|尋找|search 的 -ing 形", "keys": "n.|鑰匙|key 的複數", "beat": "v.|打敗", "easy": "adj.|容易的", "room": "n.|房間", "above": "prep.|在…上方", "slow": "v.|使變慢（slow down）", "sound": "n.|聲音", "quickly": "adv.|快速地", "stuck": "adj.|卡住的", "time": "n.|時間（just in time 剛好來得及）", "bright": "adj.|明亮的；耀眼的", "poor": "adj.|可憐的", "final": "adj.|最後的", "light": "n.|光；光線", "breath": "n.|呼吸（catch his breath 喘口氣）", "harder": "adj.|更難的|hard 的比較級", "hidden": "adj.|被藏起來的；隱藏的", "wish": "v.|但願；希望", "corner": "n.|角落", "blue": "adj.|藍色的", "middle": "n.|中間", "water": "n.|水", "perfect": "adj.|完美的；最適合的", "fill": "v.|裝滿；填滿", "around": "adv.|四處（look around 環顧四周）", "everywhere": "adv.|到處", "maybe": "adv.|也許", "same": "adj.|相同的", "think": "v.|思考", "wonder": "v.|想知道；好奇", "wall": "n.|牆"},
+    trans: ["他看到一扇大門，上面有三個鎖。", "我接下來該做什麼？", "這是個好問題。", "超級兔子男孩轉過身，看到一個鬼。", "我是一個友善的鬼。", "我正在尋找超級能量道具。", "你需要找到三把鑰匙才能進去。", "我需要打敗三個小頭目，才能拿到三把鑰匙。", "聽起來很簡單。", "在第一扇門裡面，超級兔子男孩發現一個布滿蜘蛛網的黑暗房間。", "他看到一把鑰匙掛在他上方。", "蜘蛛網讓他的速度變得好慢。", "突然，他聽到一個喀喀的聲音。", "她很快地朝他爬過來。", "他跑向門口，但是他被蜘蛛網卡住了。", "就在千鈞一髮之際，超級兔子男孩從蜘蛛網中掙脫出來。", "這個房間充滿熱氣和明亮的紅色火焰。", "他朝可憐的超級兔子男孩丟火球。", "第三個，也是最後一個房間，非常暗。", "唯一的光來自房間另一頭那把閃亮的鑰匙。", "他喘了一口氣。", "這比你想的還難。", "下面藏著三個能量道具。", "真希望我早點知道。", "每個轉角都有壞人在等著。", "他通過了壞人，走進一個奇怪的藍色房間。", "房間中間有一顆發光的藍色鑽石。", "我會給你水的力量。", "這是打敗火焰頭目最完美的能力。", "他用他的新能力把一條溝裝滿水。", "他四處尋找第三個能量道具，但是找不到。", "我到處都找過了。", "也許有一個隱藏的開關。", "他一直在相同的地方跑來跑去，覺得好累。", "我應該停下來想一想。", "我想知道為什麼那支火把沒有點亮。", "牆上打開了一扇秘密的門。"],
     questions: [
       [2, "He sees a large door with three locks on it.", "door", "n"],
       [15, "What should I do next?", "next", "adv,adj", "n,ved,ving"],
@@ -495,6 +503,7 @@ window.STORIES = [
     duration: 318,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["jump", "v"], ["swim", "v"]],
     vocab: {"great": "adj.|很棒的", "pure": "adj.|純粹的", "light": "n.|光", "body": "n.|身體", "now": "adv.|現在", "main": "adj.|主要的", "burn": "v.|燒", "everywhere": "adv.|到處", "soon": "adv.|很快地；不久", "left": "adj.|剩下的|leave 的過去分詞", "bright": "adj.|閃亮的；耀眼的", "three": "num.|三", "together": "adv.|一起", "without": "prep.|沒有…；不帶著…", "giant": "adj.|巨大的", "strong": "adj.|強壯的", "fast": "adv.|快地（Not so fast! 別急！）", "knew": "v.|知道|know 的過去式", "followed": "v.|跟隨|follow 的過去式", "work": "n.|工作", "ever": "adv.|曾經；任何時候", "secret": "n.|秘密", "smart": "adj.|聰明的", "plans": "n.|計畫|plan 的複數", "again": "adv.|再一次", "back": "adv.|回來；回去", "team": "n.|隊伍；團隊", "stay": "v.|待著；留下", "surprise": "n.|驚喜", "everyone": "pron.|每個人"},
+    trans: ["你繼續玩。你玩得很棒。", "超級兔子男孩走進一個充滿純淨光芒的房間。", "我會給你閃亮的光之力量。", "超級兔子男孩的身體正在發光。", "超級兔子男孩現在能量全滿了。", "他回到主要的房間。", "在第一個房間，他用火的力量燒掉蜘蛛網。", "他用水的力量把水噴得到處都是。", "很快地，所有的火都熄滅了。", "只剩下一把鑰匙了。", "你好亮喔。", "我現在三把鑰匙都有了。", "我們一起做到了。", "沒有你的幫忙，我不可能做到。", "超級兔子男孩用三把鑰匙打開了巨大的門。", "我等了很久，等一個夠強壯、夠勇敢的人來找到我。", "別急！", "但我知道你讀了我的信之後，會急著去找它。", "我一路跟著你到這裡。", "所有辛苦的工作都是你做的。", "你現在絕對不可能阻止我了。", "我有一個秘密。", "她是一位很聰明的公主。", "看來我又破壞了你的計畫。", "喔不，又來了。", "跟我一起回動物小鎮吧。", "我們是很棒的團隊。", "我們留在這裡躲起來，對大家比較安全。", "我們還有最後一個驚喜要給你。", "謝謝大家。"],
     questions: [
       [8, "You keep playing. You're doing great.", "great", "adj", "n,ved,ving"],
       [13, "Super Rabbit Boy enters a room of pure light.", "pure", "adj", "n,ved,ving"],
@@ -537,6 +546,7 @@ window.STORIES = [
     duration: 316,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["swim", "v"]],
     vocab: {"package": "n.|包裹", "open": "v.|打開", "play": "v.|玩", "broken": "adj.|壞掉的", "work": "v.|運作；能用", "car": "n.|汽車", "anywhere": "adv.|任何地方", "fun": "n.|樂趣；好玩", "list": "n.|清單", "sound": "n.|聲音", "toy": "n.|玩具", "mail": "n.|郵件", "forward": "adv.|向前", "spin": "v.|旋轉", "looks": "v.|看起來|look 的第三人稱單數", "turn": "n.|輪到的機會（take turns 輪流）", "minute": "n.|分鐘；一下子", "drive": "v.|駕駛；開（車）", "rock": "n.|石頭", "letting": "v.|讓；允許|let 的 -ing 形", "wait": "v.|等待", "share": "v.|分享", "surprise": "n.|驚喜", "follow": "v.|跟著", "race": "n.|賽跑；比賽", "winner": "n.|贏家；優勝者", "close": "adj.|（比數）接近的；差一點", "write": "v.|寫", "win": "v.|贏", "next": "adj.|下一個的"},
+    trans: ["我希望我的包裹今天到了。", "我等不及要打開它了。", "我現在就要玩它。", "我希望它沒有壞掉。", "它需要電池才能運作。", "我需要幫我的新車找電池。", "到處都沒有電池。", "這台車好好玩！", "我會把電池寫在購物清單上。", "那個聲音是從哪裡來的？", "我看到你有一台新的玩具車。", "對啊，它今天跟著郵件一起寄來了。", "我可以讓它往前走。", "我可以讓它轉圈圈。", "你的車看起來很好玩。", "可以輪到我玩嗎？", "等一下。我還有更多東西要給你看。", "還不行。我想先再開一下。", "我想讓它跳過那塊石頭。", "謝謝你讓我玩一下。", "對不起，讓你等了那麼久。", "我知道要分享新玩具很難。", "我有一個驚喜要給你。", "跟我來！", "我做了一條賽車跑道。", "誰跑得最快，誰就是贏家。", "差一點點，但是是你贏了，哈利。", "我贏了這場比賽，所以我要把我的名字寫在獎盃上。", "等你贏了，我們也會把你的名字加上去。", "下一場比賽是什麼時候？就是現在！"],
     questions: [
       [7, "I hope my package came today.", "package", "n"],
       [16, "I cannot wait to open it.", "open", "v,adj", "n,ved,ving,adv"],
@@ -579,6 +589,7 @@ window.STORIES = [
     duration: 320,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["swim", "v"], ["jump", "v"]],
     vocab: {"birthday": "n.|生日", "present": "n.|禮物", "really": "adv.|真的", "almost": "adv.|幾乎；快要", "fast": "adv.|快地；趕快", "paper": "n.|紙", "away": "adv.|馬上（right away）", "late": "adj.|遲到的；晚的", "give": "v.|給", "hat": "n.|帽子", "inside": "adv.|進來；在裡面", "table": "n.|桌子", "far": "adv.|遠地（far away 很遠）", "later": "adv.|晚一點；之後", "games": "n.|遊戲|game 的複數", "throw": "v.|舉辦（派對）；丟", "glad": "adj.|高興的", "send": "v.|寄；送", "write": "v.|寫", "wrong": "adj.|不對勁的；錯的", "same": "adj.|相同的", "special": "adj.|特別的", "wanted": "v.|想要|want 的過去式", "true": "adj.|真的；正確的", "better": "adj.|比較好的|good 的比較級", "race": "v.|和…比賽", "silly": "adj.|傻傻的；可笑的", "nothing": "pron.|沒有東西；沒什麼", "work": "v.|運作", "finger": "n.|手指", "hold": "v.|握住；抓住", "again": "adv.|再一次"},
+    trans: ["今天是刺蝟的生日。", "我希望他喜歡我送他的禮物。", "這是一架真的會飛的玩具飛機。", "派對時間快到了。", "我需要趕快找到一些。", "到處都沒有包裝紙。", "刺蝟會馬上看出禮物是什麼。", "我也遲到很久了。", "他是我最好的朋友，所以我想送他最好的禮物。", "你喜歡我的派對帽嗎？", "進來吧。歡迎來參加我的派對。", "你可以把禮物放在這張桌子上。", "它們是住在很遠的朋友送的。", "我晚一點再拆禮物。", "現在是派對遊戲時間。", "你真會辦派對。", "我很高興你玩得開心。", "我得寄一張感謝卡給露娜。", "我得寫一封好好的信給水獺。", "怎麼了？", "我送你的玩具跟水獺送的一樣。", "刺蝟，你真是一個特別的朋友。", "我希望我送你的禮物是最好的那一個。", "怎麼可能是真的？", "兩架飛機比一架好多了。", "現在我可以和朋友一起比賽飛它們了。", "現在我覺得自己白擔心了，好傻。", "吃蛋糕和冰淇淋一點都不傻。", "它們怎麼玩呢，哈利？", "你用手指把螺旋槳轉緊。", "抓住螺旋槳，等你準備好了，再把飛機丟出去。", "我們再來一次吧。"],
     questions: [
       [4, "It is Hedgehog's birthday today.", "birthday", "n"],
       [13, "I hope he likes the present I got him.", "present", "n"],
@@ -623,6 +634,7 @@ window.STORIES = [
     duration: 396,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["jump", "v"]],
     vocab: {"hot": "adj.|熱的", "cool": "adj.|涼快的", "fan": "n.|電風扇", "swimming": "v.|游泳|swim 的 -ing 形", "ball": "n.|球", "anything": "pron.|任何東西", "invite": "v.|邀請", "day": "n.|日子；天", "game": "n.|遊戲", "stone": "n.|石頭", "easy": "adj.|容易的", "turns": "n.|輪流（take turns）|turn 的複數", "found": "v.|找到|find 的過去式", "work": "v.|行得通；有用", "keeps": "v.|使保持|keep 的第三人稱單數", "might": "aux.|可能", "lonely": "adj.|寂寞的", "something": "pron.|某件事；某樣東西", "scary": "adj.|可怕的", "move": "v.|移動", "face": "n.|臉", "trick": "n.|訣竅；小技巧", "nose": "n.|鼻子", "deep": "adj.|深的", "try": "v.|試試看", "better": "adj.|更好的|good 的比較級", "real": "adj.|真正的", "things": "n.|東西|thing 的複數", "plan": "n.|計畫", "picture": "n.|圖畫", "luck": "n.|運氣（Good luck! 祝好運）", "meet": "v.|和…見面", "buy": "v.|買", "always": "adv.|總是"},
+    trans: ["今天好熱。", "我需要一個保持涼快的方法。", "也許這台電風扇會有幫助。", "哈利和我可以去游泳。", "我會帶我的球。", "我還需要別的東西嗎？", "我忘了邀請哈利。", "今天是游泳的好日子。", "我不知道那個遊戲怎麼玩。", "首先，我們需要一顆特別的石頭。", "在水底下很容易看到它。", "我們輪流潛下去找它。", "我找到了！", "這個遊戲行不通。", "我的小鴨讓我浮在水面上。", "我的小鴨可能會漂走。", "我的小鴨可能會寂寞。", "你是不是有什麼事沒告訴我？", "這對我來說太可怕了。", "我們移到這邊來吧。", "你只需要把臉放進水裡。", "如果你知道訣竅，就沒那麼可怕了。", "訣竅就是捏住你的鼻子。", "捏住鼻子，深深吸一口氣。", "嗯，我想我可以試試看。", "沒有，但是我找到更好的東西。", "我沒想到你會找到真正的寶藏。", "我們在池塘裡找到很多很酷的東西。", "喔，我對它有一個秘密計畫。", "你在畫畫嗎？", "祝你好運！", "我在 X 的地方和你見面。", "我用你的硬幣買冰淇淋給我們吃。", "在熱天吃冰淇淋，永遠是個好計畫。"],
     questions: [
       [19, "It's so hot today.", "hot", "adj", "n,ved,ving,adv"],
       [29, "I need a way to keep cool.", "cool", "adj", "n,ved,ving,adv"],
@@ -669,6 +681,7 @@ window.STORIES = [
     duration: 339,
     extraWords: [["robot", "n"], ["castle", "n"], ["frog", "n"], ["happy", "adj"], ["hungry", "adj"], ["slowly", "adv"], ["under", "prep"], ["swim", "v"], ["jump", "v"]],
     vocab: {"sleep": "n.|睡眠；一覺", "plans": "n.|計畫|plan 的複數", "outside": "adv.|在外面", "doctor": "n.|醫生", "happen": "v.|發生", "about": "prep.|關於", "later": "adv.|晚一點；之後", "sad": "adj.|難過的", "worried": "adj.|擔心的", "sick": "adj.|生病的", "sure": "adj.|確定的（make sure 確認）", "say": "v.|說", "ready": "adj.|準備好的", "right": "adv.|馬上（right back 馬上回來）", "before": "conj.|在…之前", "hurt": "v.|痛；使受傷", "listen": "v.|聽", "heart": "n.|心臟", "hear": "v.|聽到", "favorite": "adj.|最喜歡的", "magic": "n.|魔術；魔法", "eyes": "n.|眼睛|eye 的複數", "arm": "n.|手臂", "sometimes": "adv.|有時候", "part": "n.|部分", "shape": "n.|狀況（in good shape 狀況很好）", "brave": "adj.|勇敢的", "helping": "v.|幫忙|help 的 -ing 形", "soccer": "n.|足球", "leg": "n.|腿", "time": "n.|次；回"},
+    trans: ["睡得真好，但現在該起床了。", "我在這全新的一天有好多計畫。", "我要去外面玩。", "我要去看醫生。", "我不知道到那裡會發生什麼事。", "我現在不想想這件事。", "我晚一點再擔心健康檢查的事。", "哈利，你看起來很難過。", "我不是難過，我是擔心。", "喔不，你生病了嗎？", "醫生只是想確認你身體健康。", "你說得倒容易。", "我會幫你準備好去做健康檢查。", "等一下，我馬上回來。", "你還沒反應過來，健康檢查就結束了。", "別擔心，不會痛的。", "接下來，我要聽聽你的心臟。", "你的心跳聽起來很有力。", "我聽得到我的心跳！", "現在是我最喜歡的部分了。", "那就像變魔術一樣。", "你必須閉上眼睛。", "你為什麼捏我的手臂？", "有時候會打一針。", "你會喜歡最後一個部分的。", "一切都很順利。我的身體狀況很好。", "我非常勇敢，所以拿到了一張貼紙。", "謝謝你幫我準備好去做健康檢查。", "你想踢足球嗎？", "你可以再用小槌子讓我的腳跳起來嗎？", "這次我可以拿櫻桃棒棒糖嗎？"],
     questions: [
       [6, "That was a good sleep, but now it is time to get up.", "sleep", "n,v"],
       [15, "I have so many plans for this brand new day.", "plans", "n"],
@@ -923,6 +936,9 @@ function renderQ(){
   $("#roadFill").style.width = p + "%"; $("#rider").style.left = `calc(17px + (100% - 34px) * ${p/100})`;
   const [pre,, post] = splitSentence(q);
   $("#qSentence").innerHTML = `${esc(pre)}<span class="blank" id="blank">?</span>${esc(post)}`;
+  // translation stays hidden until the first answer is picked (right or wrong)
+  $("#qTrans").textContent = transOf(st, q.i) ? "中文：" + transOf(st, q.i) : "";
+  $("#qTrans").hidden = true;
   const start = Math.max(0, q.t - 1);
   $("#qVidLink").href = `https://www.youtube.com/watch?v=${st.youtubeId}&t=${start}s`;
   $("#qVidLink").textContent = `▶ 到 YouTube 看這段（${fmtT(start)}）`;
@@ -946,7 +962,9 @@ $("#qEmbedBtn").onclick = () => {
   }
   box.hidden = false; $("#qEmbedBtn").textContent = "關閉影片";
 };
+function transOf(st, i){ return (st.trans || [])[i] || ""; }
 function choose(b){
+  if ($("#qTrans").textContent) $("#qTrans").hidden = false;
   const c = quiz.cur, w = b.dataset.w;
   if (w.toLowerCase() === c.q.a.toLowerCase()){
     b.classList.add("right");
@@ -1049,6 +1067,7 @@ function openWord(st, qi, from){
     ${info ? `<div class="wp-pos"><span class="pos">${esc(info.posZh)}　${esc(info.pos)}</span>${info.note ? `<span class="msg">${esc(info.note)}</span>` : ""}</div>
     <div class="wp-zh">${esc(info.zh)}</div>` : `<div class="msg">這個單字還沒有中文解釋。</div>`}
     <div class="wp-sent">${esc(pre)}<u>${esc(mid)}</u>${esc(post)}</div>
+    ${transOf(st, qi) ? `<div class="wp-tr">${esc(transOf(st, qi))}</div>` : ""}
     <a href="https://www.youtube.com/watch?v=${esc(st.youtubeId)}&t=${t}s" target="_blank" rel="noopener">▶ 看影片這段（${fmtT(t)}）</a>
   </div>`;
   d.hidden = false; wpReturn = from || null;
@@ -1129,6 +1148,7 @@ function answerV(b){
     ${c.info.zh !== right ? `<div>${esc(c.info.zh)}</div>` : ""}
     <div class="wp-pos"><b>${esc(c.q.a)}</b><span class="pos">${esc(c.info.posZh)}　${esc(c.info.pos)}</span>${c.info.note ? `<span class="msg">${esc(c.info.note)}</span>` : ""}</div>
     <div class="wp-sent">${esc(pre)}<u>${esc(mid)}</u>${esc(post)}</div>
+    ${transOf(vq.st, c.q.i) ? `<div class="wp-tr">${esc(transOf(vq.st, c.q.i))}</div>` : ""}
     <div class="row"><button class="btn ghost" id="vSay2">🔊 再聽一次</button><button class="btn" id="vNext">${last ? "看結果 →" : "下一題 →"}</button></div>`;
   $("#vSay2").onclick = () => say(c.q.a, 0.8);
   $("#vNext").onclick = () => { vq.pos++; if (vq.pos < vq.list.length) { renderV(); window.scrollTo(0,0); } else showVResult(); };
